@@ -1,18 +1,22 @@
 {
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "STM32 Debug",
-      "type": "cortex-debug",
-      "request": "launch",
-      "servertype": "openocd",
-      "cwd": "${workspaceFolder}",
-      "executable": "${workspaceFolder}/build/stm32_project.elf",
-      "configFiles": [
-        "/opt/homebrew/opt/open-ocd/share/openocd/scripts/interface/stlink-v2.cfg",
-        "/opt/homebrew/opt/open-ocd/share/openocd/scripts/target/stm32f1x.cfg"
-      ],
-      "preLaunchTask": "Build"
-    }
-  ]
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "STM32 Debug (OpenOCD)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/build/STM32F103C8T6.elf",
+            "configFiles": [
+                "interface/stlink-v2.cfg",
+                "target/stm32f1x.cfg"
+            ],
+            "searchDir": [
+                "/opt/homebrew/opt/open-ocd/share/openocd/scripts"
+            ],
+            "preLaunchTask": "Build",
+            "runToEntryPoint": "main"
+        }
+    ]
 }

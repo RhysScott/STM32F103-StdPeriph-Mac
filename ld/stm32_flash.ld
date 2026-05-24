@@ -1,97 +1,78 @@
 /*
-*****************************************************************************
-**
-**  File        : stm32_flash.ld
-**
-**  Abstract    : Linker script for STM32F103VB Device with
-**                128KByte FLASH, 20KByte RAM
-**
-**                Set heap size, stack size and stack location according
-**                to application requirements.
-**
-**                Set memory bank area and size if external memory is used.
-**
-**  Target      : STMicroelectronics STM32
-**
-**  Environment : Atollic TrueSTUDIO(R)
-**
-**  Distribution: The file is distributed �as is,� without any warranty
-**                of any kind.
-**
-**  (c)Copyright Atollic AB.
-**  You may use this file as-is or modify it according to the needs of your
-**  project. Distribution of this file (unmodified or modified) is not
-**  permitted. Atollic AB permit registered Atollic TrueSTUDIO(R) users the
-**  rights to distribute the assembled, compiled & linked contents of this
-**  file as part of an application binary file, provided that it is built
-**  using the Atollic TrueSTUDIO(R) toolchain.
-**
-*****************************************************************************
-*/
+ *****************************************************************************
+ **
+ **  File        : stm32_flash.ld
+ **
+ **  Abstract    : Linker script for STM32F103C8T6
+ **                64KB FLASH, 20KB SRAM
+ **
+ **  Target      : STM32F103C8T6 (Medium Density)
+ **
+ *****************************************************************************
+ */
 
-/* Entry Point */
+/* 入口点 */
 ENTRY(Reset_Handler)
 
-/* Highest address of the user mode stack */
-_estack = 0x20005000;    /* end of 20K RAM */
+/* 栈顶地址（SRAM 末尾：0x20000000 + 20KB） */
+_estack = 0x20005000;
 
-/* Generate a link error if heap and stack don't fit into RAM */
-_Min_Heap_Size = 0;      /* required amount of heap  */
-_Min_Stack_Size = 0x100; /* required amount of stack */
+/* 堆和栈最小尺寸检查 */
+_Min_Heap_Size = 0x200;   /* 512 字节堆 */
+_Min_Stack_Size = 0x400;  /* 1KB 栈 */
 
-/* Specify the memory areas */
+/* 内存区域定义 */
 MEMORY
 {
-  FLASH (rx)      : ORIGIN = 0x08000000, LENGTH = 128K
-  RAM (xrw)       : ORIGIN = 0x20000000, LENGTH = 20K
-  MEMORY_B1 (rx)  : ORIGIN = 0x60000000, LENGTH = 0K
+  FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 64K
+  RAM  (xrw) : ORIGIN = 0x20000000, LENGTH = 20K
 }
 
-/* Define output sections */
+/* 输出段定义 */
 SECTIONS
 {
-  /* The startup code goes first into FLASH */
+  /* 中断向量表放在 FLASH 最前面 */
   .isr_vector :
   {
     . = ALIGN(4);
-    KEEP(*(.isr_vector)) /* Startup code */
+    KEEP(*(.isr_vector))
     . = ALIGN(4);
   } >FLASH
 
-  /* The program code and other data goes into FLASH */
+  /* 代码和只读数据 */
   .text :
   {
     . = ALIGN(4);
-    *(.text)           /* .text sections (code) */
-    *(.text*)          /* .text* sections (code) */
-    *(.rodata)         /* .rodata sections (constants, strings, etc.) */
-    *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
-    *(.glue_7)         /* glue arm to thumb code */
-    *(.glue_7t)        /* glue thumb to arm code */
+    *(.text)
+    *(.text*)
+    *(.rodata)
+    *(.rodata*)
+    *(.glue_7)
+    *(.glue_7t)
 
     KEEP (*(.init))
     KEEP (*(.fini))
 
     . = ALIGN(4);
-    _etext = .;        /* define a global symbols at end of code */
+    _etext = .;        /* 代码段结束 */
   } >FLASH
 
-
-   .ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) } >FLASH
-    .ARM : {
+  /* ARM 异常表 */
+  .ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) } >FLASH
+  .ARM : {
     __exidx_start = .;
-      *(.ARM.exidx*)
-      __exidx_end = .;
-    } >FLASH
+    *(.ARM.exidx*)
+    __exidx_end = .;
+  } >FLASH
 
-  .ARM.attributes : { *(.ARM.attributes) } > FLASH
-
-  .preinit_array     :
+  /* C++ 静态构造/析构 */
+  .preinit_array :
   {
     PROVIDE_HIDDEN (__preinit_array_start = .);
     KEEP (*(.preinit_array*))
     PROVIDE_HIDDEN (__preinit_array_end = .);
   } >FLASH
+
   .init_array :
   {
     PROVIDE_HIDDEN (__init_array_start = .);
@@ -99,6 +80,7 @@ SECTIONS
     KEEP (*(.init_array*))
     PROVIDE_HIDDEN (__init_array_end = .);
   } >FLASH
+
   .fini_array :
   {
     PROVIDE_HIDDEN (__fini_array_start = .);
@@ -107,62 +89,52 @@ SECTIONS
     PROVIDE_HIDDEN (__fini_array_end = .);
   } >FLASH
 
-  /* used by the startup to initialize data */
-  _sidata = .;
+  /* .data 段初始化数据在 FLASH 中的存储地址 */
+  _sidata = LOADADDR(.data);
 
-  /* Initialized data sections goes into RAM, load LMA copy after code */
-  .data : AT ( _sidata )
+  /* 已初始化数据段（加载到 RAM，初始值存于 FLASH） */
+  .data :
   {
     . = ALIGN(4);
-    _sdata = .;        /* create a global symbol at data start */
-    *(.data)           /* .data sections */
-    *(.data*)          /* .data* sections */
-
+    _sdata = .;
+    *(.data)
+    *(.data*)
     . = ALIGN(4);
-    _edata = .;        /* define a global symbol at data end */
-  } >RAM
+    _edata = .;
+  } >RAM AT> FLASH
 
-  /* Uninitialized data section */
-  . = ALIGN(4);
+  /* 未初始化数据段（BSS） */
   .bss :
   {
-    /* This is used by the startup in order to initialize the .bss secion */
-    _sbss = .;         /* define a global symbol at bss start */
+    . = ALIGN(4);
+    _sbss = .;
     __bss_start__ = _sbss;
     *(.bss)
     *(.bss*)
     *(COMMON)
-
     . = ALIGN(4);
-    _ebss = .;         /* define a global symbol at bss end */
+    _ebss = .;
     __bss_end__ = _ebss;
   } >RAM
 
   PROVIDE ( end = _ebss );
   PROVIDE ( _end = _ebss );
 
-  /* User_heap_stack section, used to check that there is enough RAM left */
+  /* 堆栈空间预留检查 */
   ._user_heap_stack :
   {
-    . = ALIGN(4);
+    . = ALIGN(8);
+    PROVIDE ( __heap_start = . );
     . = . + _Min_Heap_Size;
+    PROVIDE ( __heap_end = . );
     . = . + _Min_Stack_Size;
-    . = ALIGN(4);
+    . = ALIGN(8);
   } >RAM
 
-  /* MEMORY_bank1 section, code must be located here explicitly            */
-  /* Example: extern int foo(void) __attribute__ ((section (".mb1text"))); */
-  .memory_b1_text :
-  {
-    *(.mb1text)        /* .mb1text sections (code) */
-    *(.mb1text*)       /* .mb1text* sections (code)  */
-    *(.mb1rodata)      /* read-only data (constants) */
-    *(.mb1rodata*)
-  } >MEMORY_B1
-
-  /* Remove information from the standard libraries */
+  /* 丢弃调试信息（减小固件体积） */
   /DISCARD/ :
   {
+    *(.ARM.attributes)
     libc.a ( * )
     libm.a ( * )
     libgcc.a ( * )

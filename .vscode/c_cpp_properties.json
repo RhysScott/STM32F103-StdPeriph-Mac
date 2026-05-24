@@ -1,17 +1,21 @@
 {
     "configurations": [
         {
-            "name": "Mac",
+            "name": "STM32F103 (arm-none-eabi-gcc)",
             "includePath": [
                 "${workspaceFolder}/inc/driver",
-                "${workspaceFolder}/inc/user"
+                "${workspaceFolder}/inc/user",
+                "${workspaceFolder}/src/system"
             ],
             "defines": [
                 "USE_STDPERIPH_DRIVER",
-                "STM32F10X_MD"
+                "STM32F10X_MD",
+                "HSE_VALUE=8000000U"
             ],
-            "compilerPath": "/usr/bin/clang",
-            "intelliSenseMode": "macos-clang-arm64"
+            "compilerPath": "arm-none-eabi-gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-arm"
         }
     ],
     "version": 4

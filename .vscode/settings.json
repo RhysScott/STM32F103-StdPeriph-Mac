@@ -1,3 +1,14 @@
 {
-    "idf.pythonInstallPath": "/opt/homebrew/Caskroom/miniconda/base/bin/python"
+    "files.associations": {
+        "*.s": "arm",
+        "*.ld": "linkerscript"
+    },
+    "C_Cpp.default.includePath": [
+        "${workspaceFolder}/inc/driver",
+        "${workspaceFolder}/inc/user"
+    ],
+    "C_Cpp.default.defines": [
+        "USE_STDPERIPH_DRIVER",
+        "STM32F10X_MD"
+    ]
 }
